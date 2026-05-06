@@ -1,10 +1,10 @@
 import http from 'http';
 import express from 'express';
-import morgan from 'morgan';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { notFoundHandler } from '#middlewares/not-found-handler.js';
+import { morganMiddleware } from './middlewares/morgan.js';
 
 export const initializeApp = async () => {
     const app = express();
@@ -14,9 +14,7 @@ export const initializeApp = async () => {
     app.use(express.json());
 
     // HTTP request logger middleware
-    app.use(
-        morgan(':method :url :status :res[content-length] - :response-time ms'),
-    );
+    app.use(morganMiddleware);
 
     // Healthy check endpoint
     app.get('/health', (_req, res) => {
