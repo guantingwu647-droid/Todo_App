@@ -5,6 +5,9 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { notFoundHandler } from '#middlewares/not-found-handler.js';
 import { morganMiddleware } from './middlewares/morgan.js';
+import { typeDefs } from '#todos/type.js';
+import { resolvers } from '#todos/resolver.js';
+import { TodoRepository } from './todos/repository.js';
 
 export const initializeApp = async () => {
     const app = express();
@@ -26,21 +29,21 @@ export const initializeApp = async () => {
     });
     // GraphQL Server
     const server = new ApolloServer({
-        typeDefs: `
-        type Query {
-            hello: String
-        }`,
-        resolvers: {
-            Query: {
-                hello: () => 'Hello World!',
-            },
-        },
+        typeDefs,
+        resolvers,
         plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     });
 
     await server.start();
     // GraphQL endpoint
-    app.use('/api/todo', expressMiddleware(server));
+    app.use(
+        '/api/todo',
+        expressMiddleware(server, {
+            context: async () => ({
+                todoRepository: new TodoRepository({}),
+            }),
+        }),
+    );
 
     // Not found handler
     app.use(notFoundHandler);
