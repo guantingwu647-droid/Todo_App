@@ -14,7 +14,9 @@ export const resolvers = {
             __args: any,
             { todoRepository }: ResolverContext,
         ) => {
-            const todos = await todoRepository.findAll();
+            const completedTodos = await todoRepository.findAllComplete();
+            const notCompletedTodos = await todoRepository.findAllNotComplete();
+            const todos = [...notCompletedTodos, ...completedTodos];
             const returnTodo = todos.map((todo) => new TodoDto(todo));
             return returnTodo;
         },
@@ -43,10 +45,10 @@ export const resolvers = {
     Mutation: {
         createTodo: async (
             _parent: any,
-            args: CreateTodo,
+            args: { createInput: CreateTodo },
             { todoRepository }: ResolverContext,
         ) => {
-            const validation = CreateTodoSchema.safeParse(args);
+            const validation = CreateTodoSchema.safeParse(args.createInput);
             if (validation.success === false) {
                 const errors = zodErrorFormatter(validation.error);
                 logger.error(`Create Todo Resolver: ${errors}`);
@@ -59,7 +61,7 @@ export const resolvers = {
 
         updateTodo: async (
             _parent: any,
-            args: { id: string; data: UpdateTodo },
+            args: { id: string; updateInput: UpdateTodo },
             { todoRepository }: ResolverContext,
         ) => {
             const validation = IdSchema.safeParse(args.id);
@@ -68,7 +70,7 @@ export const resolvers = {
                 logger.error(`Update Todo Resolver: ${errors}`);
                 throw new GraphQLError(errors);
             }
-            const validationData = UpdateTodoSchema.safeParse(args.data);
+            const validationData = UpdateTodoSchema.safeParse(args.updateInput);
             if (validationData.success === false) {
                 const errors = zodErrorFormatter(validationData.error);
                 logger.error(`Update Todo Resolver: ${errors}`);
@@ -88,7 +90,7 @@ export const resolvers = {
             return returnTodo;
         },
 
-        deleteTodo: (
+        deleteTodo: async (
             _parent: any,
             args: { id: string },
             { todoRepository }: ResolverContext,
@@ -99,7 +101,14 @@ export const resolvers = {
                 logger.error(`Delete Todo Resolver: ${errors}`);
                 throw new GraphQLError(errors);
             }
-            return todoRepository.delete(validation.data);
+            const result = await todoRepository.delete(validation.data);
+            if (result === null) {
+                logger.error(
+                    `Delete Todo Resolver: Todo not found with id ${args.id}`,
+                );
+                throw new GraphQLError('Todo not found');
+            }
+            return result;
         },
     },
 };

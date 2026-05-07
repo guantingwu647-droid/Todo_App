@@ -7,15 +7,21 @@ export class TodoDto {
     public completed: boolean;
     public createdAt: Date;
 
-    constructor({ id, title, description, completed, createdAt }: Todo) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.completed = completed;
-        this.createdAt = createdAt;
+    constructor({
+        id,
+        title,
+        description,
+        completed,
+        createdAt,
+    }: Partial<Todo>) {
+        this.id = id as string;
+        this.title = title as string;
+        this.description = description as string;
+        this.completed = completed as boolean;
+        this.createdAt = createdAt as Date;
     }
 
-    static fromTodo(todo: Todo): TodoDto {
+    static fromTodo(todo: Partial<Todo>): TodoDto {
         return new TodoDto(todo);
     }
 }

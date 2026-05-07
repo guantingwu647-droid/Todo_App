@@ -25,11 +25,11 @@ type Todo {
     createdAt: String
 }
 type Query {
-    todos: [ReturnTodo]
+    todos: [ReturnTodo!]!
     todo(id: ID!): ReturnTodo
 }
 type Mutation {
     createTodo(createInput: CreateTodo): ReturnTodo
     updateTodo(id: ID!, updateInput: UpdateTodo): ReturnTodo
-    deleteTodo(id: ID!): null
+    deleteTodo(id: ID!): Int
 }`;

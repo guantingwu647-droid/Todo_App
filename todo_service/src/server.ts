@@ -8,8 +8,9 @@ import { morganMiddleware } from './middlewares/morgan.js';
 import { typeDefs } from '#todos/type.js';
 import { resolvers } from '#todos/resolver.js';
 import { TodoRepository } from './todos/repository.js';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
-export const initializeApp = async () => {
+export const initializeApp = async (dbInstance: NodePgDatabase) => {
     const app = express();
     const httpServer = http.createServer(app);
 
@@ -40,7 +41,7 @@ export const initializeApp = async () => {
         '/api/todo',
         expressMiddleware(server, {
             context: async () => ({
-                todoRepository: new TodoRepository({}),
+                todoRepository: new TodoRepository(dbInstance),
             }),
         }),
     );

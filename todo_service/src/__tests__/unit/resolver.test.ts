@@ -6,7 +6,8 @@ import { TodoDto } from '#todos/dto.js';
 
 describe('resolver', () => {
     const mockTodoRepository = {
-        findAll: vitest.fn(),
+        findAllComplete: vitest.fn(),
+        findAllNotComplete: vitest.fn(),
         create: vitest.fn(),
         update: vitest.fn(),
         delete: vitest.fn(),
@@ -15,10 +16,25 @@ describe('resolver', () => {
 
     describe('query', () => {
         describe('todos', () => {
-            it('When there have todos, should return todos with dto format', async () => {
-                const todos = [returnTodo({}), returnTodo({}), returnTodo({})];
+            it('When there have todos, should return todos with not completed then completed order', async () => {
+                const completedTodos = [
+                    returnTodo({ completed: true }),
+                    returnTodo({ completed: true }),
+                    returnTodo({ completed: true }),
+                ];
+                const notCompletedTodos = [
+                    returnTodo({ completed: false }),
+                    returnTodo({ completed: false }),
+                    returnTodo({ completed: false }),
+                ];
+                const todos = [...notCompletedTodos, ...completedTodos];
                 const validReturnTodos = todos.map((todo) => new TodoDto(todo));
-                mockTodoRepository.findAll.mockResolvedValue(todos);
+                mockTodoRepository.findAllComplete.mockResolvedValue(
+                    completedTodos,
+                );
+                mockTodoRepository.findAllNotComplete.mockResolvedValue(
+                    notCompletedTodos,
+                );
 
                 const result = await resolvers.Query.todos(null, null, {
                     todoRepository: mockTodoRepository,
@@ -84,7 +100,12 @@ describe('resolver', () => {
 
                 const result = await resolvers.Mutation.createTodo(
                     null,
-                    { title: todo.title, description: todo.description },
+                    {
+                        createInput: {
+                            title: todo.title,
+                            description: todo.description,
+                        },
+                    },
                     {
                         todoRepository: mockTodoRepository,
                     },
@@ -97,7 +118,12 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.createTodo(
                         null,
-                        { title: '', description: 'description 1' },
+                        {
+                            createInput: {
+                                title: '',
+                                description: 'description 1',
+                            },
+                        },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -110,8 +136,10 @@ describe('resolver', () => {
                     resolvers.Mutation.createTodo(
                         null,
                         {
-                            title: 'a'.repeat(256),
-                            description: 'description 1',
+                            createInput: {
+                                title: 'a'.repeat(256),
+                                description: 'description 1',
+                            },
                         },
                         {
                             todoRepository: mockTodoRepository,
@@ -124,7 +152,7 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.createTodo(
                         null,
-                        { title: 'title 1', description: '' },
+                        { createInput: { title: 'title 1', description: '' } },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -136,7 +164,12 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.createTodo(
                         null,
-                        { title: 'title 1', description: 'a'.repeat(1001) },
+                        {
+                            createInput: {
+                                title: 'title 1',
+                                description: 'a'.repeat(1001),
+                            },
+                        },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -153,7 +186,7 @@ describe('resolver', () => {
 
                 const result = await resolvers.Mutation.updateTodo(
                     null,
-                    { id: todo.id, data: { title: todo.title } },
+                    { id: todo.id, updateInput: { title: todo.title } },
                     {
                         todoRepository: mockTodoRepository,
                     },
@@ -162,11 +195,26 @@ describe('resolver', () => {
                 expect(result).toEqual(validReturnTodo);
             });
 
+            it('When todo is not found, should throw error', async () => {
+                const todo = returnTodo({});
+
+                mockTodoRepository.update.mockResolvedValue(null);
+                await expect(
+                    resolvers.Mutation.updateTodo(
+                        null,
+                        { id: todo.id, updateInput: { title: todo.title } },
+                        {
+                            todoRepository: mockTodoRepository,
+                        },
+                    ),
+                ).rejects.toThrow(/Todo not found/);
+            });
+
             it('When id is not valid uuid, should throw error', async () => {
                 await expect(
                     resolvers.Mutation.updateTodo(
                         null,
-                        { id: 'not-valid', data: { title: 'title 1' } },
+                        { id: 'not-valid', updateInput: { title: 'title 1' } },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -180,7 +228,7 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.updateTodo(
                         null,
-                        { id: todo.id, data: { title: '' } },
+                        { id: todo.id, updateInput: { title: '' } },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -196,7 +244,7 @@ describe('resolver', () => {
                         null,
                         {
                             id: todo.id,
-                            data: { title: 'a'.repeat(256) },
+                            updateInput: { title: 'a'.repeat(256) },
                         },
                         {
                             todoRepository: mockTodoRepository,
@@ -211,7 +259,7 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.updateTodo(
                         null,
-                        { id: todo.id, data: { description: '' } },
+                        { id: todo.id, updateInput: { description: '' } },
                         {
                             todoRepository: mockTodoRepository,
                         },
@@ -227,7 +275,7 @@ describe('resolver', () => {
                         null,
                         {
                             id: todo.id,
-                            data: { description: 'a'.repeat(1001) },
+                            updateInput: { description: 'a'.repeat(1001) },
                         },
                         {
                             todoRepository: mockTodoRepository,
@@ -242,7 +290,10 @@ describe('resolver', () => {
                 await expect(
                     resolvers.Mutation.updateTodo(
                         null,
-                        { id: todo.id, data: { completed: 'true' as any } },
+                        {
+                            id: todo.id,
+                            updateInput: { completed: 'true' as any },
+                        },
                         {
                             todoRepository: mockTodoRepository,
                         },

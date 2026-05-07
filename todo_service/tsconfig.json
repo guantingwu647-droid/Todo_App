@@ -16,6 +16,11 @@
         // Performance
         "skipLibCheck": true // Skip type checking of declaration files
     },
-    "include": ["src/**/*.ts", "src/**/*.test.ts", "vitest.config.ts"],
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.test.ts",
+        "vitest.config.ts",
+        "drizzle.config.ts"
+    ],
     "exclude": ["node_modules"]
 }
